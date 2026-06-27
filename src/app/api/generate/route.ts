@@ -1,13 +1,17 @@
 import { NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: Request) {
   try {
-    const { dietaryPreference, days, people, allergies, cuisine } = await req.json();
+    // Initialize inside the request to ensure environment variables are loaded
+    const ai = new GoogleGenAI({ 
+      apiKey: process.env.GEMINI_API_KEY,
+      vertexai: true, 
+      project: process.env.GOOGLE_CLOUD_PROJECT, 
+      location: process.env.GOOGLE_CLOUD_LOCATION 
+    });
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API Key is missing' }, { status: 500 });
-    }
+    const { dietaryPreference, days, people, allergies, cuisine } = await req.json();
 
     const prompt = `You're a senior fullstack engineer. Your sole job is to build a personal cooking to-do list based on their day. 
 The response should generate a:
@@ -34,33 +38,16 @@ Please respond in JSON format with the following structure:
 }
 Do not use markdown blocks (\`\`\`json) for the JSON output. Just output the raw JSON string.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: prompt }]
-          }
-        ],
-        generationConfig: {
-            temperature: 0.7,
-        }
-      }),
+    const response = await ai.models.generateContent({
+        model: 'gemini-1.5-flash',
+        contents: prompt
     });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Gemini API Error:', errorText);
-        return NextResponse.json({ error: 'Failed to generate meal plan from Gemini API.' }, { status: 500 });
+    
+    let text = response.text;
+    if (!text) {
+        throw new Error('No content returned from model');
     }
-
-    const result = await response.json();
-    let text = result.candidates[0].content.parts[0].text;
+    
     text = text.replace(/```json/g, '').replace(/```/g, '').trim();
     
     return NextResponse.json(JSON.parse(text));
