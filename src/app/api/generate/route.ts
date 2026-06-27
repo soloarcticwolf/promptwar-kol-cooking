@@ -6,9 +6,7 @@ export async function POST(req: Request) {
     // Initialize inside the request to ensure environment variables are loaded
     const ai = new GoogleGenAI({ 
       apiKey: process.env.GEMINI_API_KEY,
-      vertexai: true, 
-      project: process.env.GOOGLE_CLOUD_PROJECT, 
-      location: process.env.GOOGLE_CLOUD_LOCATION 
+      vertexai: true
     });
 
     const { dietaryPreference, days, people, allergies, cuisine } = await req.json();
