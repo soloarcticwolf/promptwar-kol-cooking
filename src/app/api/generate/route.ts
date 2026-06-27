@@ -6,7 +6,9 @@ export async function POST(req: Request) {
     // Initialize inside the request to ensure environment variables are loaded
     const ai = new GoogleGenAI({ 
       apiKey: process.env.GEMINI_API_KEY,
-      vertexai: true
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT,
+      location: process.env.GOOGLE_CLOUD_LOCATION
     });
 
     const { dietaryPreference, days, people, allergies, cuisine } = await req.json();
@@ -37,7 +39,7 @@ Please respond in JSON format with the following structure:
 Do not use markdown blocks (\`\`\`json) for the JSON output. Just output the raw JSON string.`;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         contents: prompt
     });
     
